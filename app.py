@@ -1,9 +1,16 @@
 import streamlit as st
 from docxtpl import DocxTemplate # Import DocxTemplate
-from docx2pdf import convert
+import pypandoc
 import tempfile
 import datetime 
 import os
+
+# --- ensure pandoc exists ---
+try:
+    pypandoc.get_pandoc_path()
+except OSError:
+    st.warning("Pandoc not found. Downloading now... (first run only)")
+    pypandoc.download_pandoc()
 
 # Function to replace placeholders in the docx template
 def generate_letter(template_path, context):
@@ -20,7 +27,9 @@ def generate_letter(template_path, context):
     # Return the rendered document object
     return doc
 
-import pypandoc
+
+
+
 def save_and_convert_to_pdf(doc, student_name, university_name):
     """Saves the generated docx and converts it to PDF (cloud-safe)."""
     temp_dir = tempfile.mkdtemp()
