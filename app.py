@@ -102,11 +102,6 @@ def save_and_convert_to_pdf(doc, student_name, university_name):
 st.set_page_config(page_title="Graduate Recommendation Letter Generator", layout="wide")
 st.title("🎓 Graduate School Recommendation Letter Generator")
 
-st.markdown(
-    "Automatically generate recommendation letters using official templates. "
-    "Ensure your `Male.docx` and `Female.docx` use Jinja2 placeholders such as `{{ Name }}`, `{{ Date }}`, etc."
-)
-
 # --- Input Form ---
 with st.form("recommendation_form"):
     st.subheader("🧾 Student Details")
