@@ -27,13 +27,9 @@ def generate_letter(template_path, context):
     # Return the rendered document object
     return doc
 
-
-
-
 def save_and_convert_to_pdf(doc, student_name, university_name):
-    """Saves the generated docx and converts it to PDF (cloud-safe)."""
+    """Saves the generated docx and converts it to PDF (works on Streamlit Cloud)."""
     temp_dir = tempfile.mkdtemp()
-    
     safe_student_name = student_name.replace(" ", "_").replace("/", "_")
     safe_university_name = university_name.replace(" ", "_").replace("/", "_")
     file_basename = f"{safe_student_name}_{safe_university_name}"
@@ -44,7 +40,13 @@ def save_and_convert_to_pdf(doc, student_name, university_name):
     # Save DOCX
     doc.save(docx_path)
 
-    # Convert DOCX → PDF using pypandoc (works on Linux)
+    # Make sure pandoc exists (download if missing)
+    try:
+        pypandoc.get_pandoc_path()
+    except OSError:
+        pypandoc.download_pandoc()
+
+    # Convert DOCX → PDF
     try:
         pypandoc.convert_file(docx_path, "pdf", outputfile=pdf_path, extra_args=["--standalone"])
     except Exception as e:
