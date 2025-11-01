@@ -4,6 +4,8 @@ import pypandoc
 import tempfile
 import datetime
 import os
+import zipfile
+import mimetypes
 
 # --- Ensure Pandoc is available ---
 try:
@@ -13,58 +15,96 @@ except OSError:
     pypandoc.download_pandoc()
 
 
-# --- Function to fill the template ---
+# --- Helper: list and extract media from DOCX ---
+def list_docx_media(docx_path):
+    media = []
+    try:
+        with zipfile.ZipFile(docx_path, 'r') as z:
+            for name in z.namelist():
+                if name.startswith("word/media/"):
+                    mime_type, _ = mimetypes.guess_type(name)
+                    media.append((name, mime_type or "application/octet-stream"))
+    except Exception as e:
+        st.warning(f"Could not inspect .docx media: {e}")
+    return media
+
+
+def extract_docx_media(docx_path, out_dir):
+    extracted = []
+    with zipfile.ZipFile(docx_path, 'r') as z:
+        for member in z.namelist():
+            if member.startswith("word/media/"):
+                target_path = os.path.join(out_dir, os.path.basename(member))
+                with open(target_path, "wb") as f:
+                    f.write(z.read(member))
+                extracted.append(target_path)
+    return extracted
+
+
+# --- Template rendering ---
 def generate_letter(template_path, context):
-    """Render the DOCX template using docxtpl with all placeholders replaced."""
     doc = DocxTemplate(template_path)
     doc.render(context)
     return doc
 
 
-# --- Function to save and convert DOCX → PDF ---
+# --- Save DOCX and attempt PDF conversion ---
 def save_and_convert_to_pdf(doc, student_name, university_name):
-    """Saves the generated DOCX and converts it to PDF (works on Streamlit Cloud)."""
     temp_dir = tempfile.mkdtemp()
-
-    # Create safe filenames
     safe_student = student_name.replace(" ", "_").replace("/", "_")
-    safe_university = university_name.replace(" ", "_").replace("/", "_")
-    file_basename = f"{safe_student}_{safe_university}"
+    safe_univ = university_name.replace(" ", "_").replace("/", "_")
+    base = f"{safe_student}_{safe_univ}"
 
-    docx_path = os.path.join(temp_dir, f"{file_basename}.docx")
-    pdf_path = os.path.join(temp_dir, f"{file_basename}.pdf")
+    docx_path = os.path.join(temp_dir, f"{base}.docx")
+    pdf_path = os.path.join(temp_dir, f"{base}.pdf")
 
-    # Save the filled DOCX
+    # Save DOCX
     doc.save(docx_path)
 
-    # Ensure pandoc is installed (in case of rebuild)
+    # Ensure Pandoc is present
     try:
         pypandoc.get_pandoc_path()
     except OSError:
         pypandoc.download_pandoc()
 
-    # Try to convert DOCX → PDF
     try:
-        pypandoc.convert_file(
-            docx_path,
-            "pdf",
-            outputfile=pdf_path,
-            extra_args=["--standalone", "--pdf-engine=xelatex"],
-        )
+        # Try PDF conversion (no fixed engine)
+        pypandoc.convert_file(docx_path, "pdf", outputfile=pdf_path, extra_args=["--standalone"])
+        return docx_path, pdf_path
     except Exception as e:
         st.warning(f"⚠️ PDF conversion failed: {e}")
-        st.info("The Word document has been generated successfully.")
-        pdf_path = None
+        media_list = list_docx_media(docx_path)
+        emf_files = [m for m, t in media_list if m.lower().endswith(".emf") or (t and "emf" in (t.lower() or ""))]
 
-    return docx_path, pdf_path
+        if emf_files:
+            st.error("🚫 Your Word template contains EMF images that Pandoc cannot convert on Linux.")
+            st.info("➡️ Please replace EMF images with PNG or JPG in your Word templates (letterhead/signature).")
+            # Extract media for inspection
+            media_out = os.path.join(temp_dir, "extracted_media")
+            os.makedirs(media_out, exist_ok=True)
+            extracted = extract_docx_media(docx_path, media_out)
+            st.markdown("### 🔎 Extracted media files:")
+            for p in extracted:
+                fname = os.path.basename(p)
+                try:
+                    with open(p, "rb") as mf:
+                        st.download_button(label=f"Download {fname}", data=mf.read(), file_name=fname)
+                except Exception:
+                    st.write(f"- {fname} (unable to show preview)")
+        else:
+            st.info("No EMF images found. Conversion likely failed due to missing TeX engine or unsupported image type.")
+            st.info("➡️ Replace any SVG/WMF images with PNG/JPG in your templates.")
+
+        return docx_path, None
 
 
 # --- Streamlit App ---
 st.set_page_config(page_title="Graduate Recommendation Letter Generator", layout="wide")
 st.title("🎓 Graduate School Recommendation Letter Generator")
+
 st.markdown(
-    "Automatically generate recommendation letters with your official letterhead and signature. "
-    "Ensure your templates (`Male.docx` and `Female.docx`) use Jinja2 placeholders like `{{ Name }}`."
+    "Automatically generate recommendation letters using official templates. "
+    "Ensure your `Male.docx` and `Female.docx` use Jinja2 placeholders such as `{{ Name }}`, `{{ Date }}`, etc."
 )
 
 # --- Input Form ---
@@ -87,11 +127,11 @@ with st.form("recommendation_form"):
 
 # --- Processing ---
 if submitted:
-    required_fields = [full_name, gender, university, project_topic, grad_class, cwa, year]
-    if not all(required_fields):
+    required = [full_name, gender, university, project_topic, grad_class, cwa, year]
+    if not all(required):
         st.warning("⚠️ Please fill in all fields before generating the letter.")
     else:
-        with st.spinner("⏳ Generating letter... please wait."):
+        with st.spinner("⏳ Generating letter..."):
             try:
                 current_date = datetime.date.today().strftime("%B %d, %Y")
 
@@ -109,10 +149,7 @@ if submitted:
                 template_file = "Male.docx" if gender == "Male" else "Female.docx"
 
                 if not os.path.exists(template_file):
-                    st.error(
-                        f"❌ Template file '{template_file}' not found. "
-                        "Please upload or place it in the same folder as this script."
-                    )
+                    st.error(f"❌ Template file '{template_file}' not found. Please upload it to the app directory.")
                 else:
                     doc = generate_letter(template_file, context)
                     docx_path, pdf_path = save_and_convert_to_pdf(doc, full_name, university)
