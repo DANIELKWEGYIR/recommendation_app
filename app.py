@@ -1,6 +1,7 @@
 import streamlit as st
 from docxtpl import DocxTemplate # Import DocxTemplate
 from docx2pdf import convert
+import pypandoc
 import tempfile
 import datetime
 import os
@@ -22,29 +23,26 @@ def generate_letter(template_path, context):
 
 
 def save_and_convert_to_pdf(doc, student_name, university_name):
-    """Saves the generated docx and converts it to PDF."""
-    # Save DOCX temporarily
+    """Saves the generated docx and converts it to PDF (cloud-safe)."""
     temp_dir = tempfile.mkdtemp()
     
-    # Sanitize the student name and university for the filename
     safe_student_name = student_name.replace(" ", "_").replace("/", "_")
     safe_university_name = university_name.replace(" ", "_").replace("/", "_")
-    file_basename = f"{safe_student_name}_{safe_university_name}" # New filename format
-    
+    file_basename = f"{safe_student_name}_{safe_university_name}"
+
     docx_path = os.path.join(temp_dir, f"{file_basename}.docx")
     pdf_path = os.path.join(temp_dir, f"{file_basename}.pdf")
-    
-    # Save the rendered document
+
+    # Save DOCX
     doc.save(docx_path)
-    
-    # Convert to PDF
+
+    # Convert DOCX → PDF using pypandoc (works on Linux)
     try:
-        convert(docx_path, pdf_path)
+        pypandoc.convert_file(docx_path, "pdf", outputfile=pdf_path, extra_args=["--standalone"])
     except Exception as e:
-        st.error(f"Error converting to PDF: {e}")
-        st.error("Please ensure 'docx2pdf' and its dependencies (like Microsoft Word or LibreOffice on some systems) are installed and configured.")
-        return docx_path, None # Return only the docx path if PDF conversion fails
-        
+        st.warning(f"PDF conversion failed: {e}")
+        pdf_path = None
+
     return docx_path, pdf_path
 
 
