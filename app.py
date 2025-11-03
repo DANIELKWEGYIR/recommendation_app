@@ -3,8 +3,8 @@ from docxtpl import DocxTemplate
 import tempfile
 import datetime
 import os
-import requests
-import base64
+import smtplib
+from email.message import EmailMessage
 
 # --- Helper: generate letter ---
 def generate_letter(template_path, context):
@@ -24,45 +24,54 @@ def save_docx_only(doc, student_name, university_name):
     return docx_path
 
 
-# --- Send email with EmailJS ---
-def send_email_with_emailjs(student_name, university, grad_class, cwa, docx_path):
-    """Send the generated letter to lecturer's email via EmailJS."""
-    try:
-        with open(docx_path, "rb") as f:
-            encoded_file = base64.b64encode(f.read()).decode()
+# --- Send email via Gmail SMTP ---
+def send_email_with_gmail(student_name, university, grad_class, cwa, docx_path):
+    """Send the generated letter to your Gmail using SMTP."""
+    sender = st.secrets["SMTP_EMAIL"]
+    password = st.secrets["SMTP_PASS"]
+    recipient = st.secrets["SMTP_EMAIL"]  # send to yourself
 
-        payload = {
-            "service_id": st.secrets["EMAILJS_SERVICE_ID"],
-            "template_id": st.secrets["EMAILJS_TEMPLATE_ID"],
-            "user_id": st.secrets["EMAILJS_PUBLIC_KEY"],
-            "template_params": {
-                "student_name": student_name,
-                "university": university,
-                "grad_class": grad_class,
-                "cwa": cwa,
-                "to_email": st.secrets["MY_EMAIL"],  # your email
-            },
-            "attachments": [
-                {
-                    "name": os.path.basename(docx_path),
-                    "data": f"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{encoded_file}",
-                }
-            ],
-        }
+    # Create the email
+    msg = EmailMessage()
+    msg["From"] = sender
+    msg["To"] = recipient
+    msg["Subject"] = f"Recommendation Letter: {student_name} ({university})"
+    msg.set_content(
+        f"""Dear Lecturer,
 
-        response = requests.post(
-            "https://api.emailjs.com/api/v1.0/email/send",
-            json=payload,
-            timeout=30,
+A new recommendation letter has been generated.
+
+Student: {student_name}
+University: {university}
+Graduating Class: {grad_class}
+CWA: {cwa}
+
+The Word document is attached.
+
+Regards,
+Automated Recommendation Letter System
+"""
+    )
+
+    # Attach the file
+    with open(docx_path, "rb") as f:
+        file_data = f.read()
+        file_name = os.path.basename(docx_path)
+        msg.add_attachment(
+            file_data,
+            maintype="application",
+            subtype="vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=file_name,
         )
 
-        if response.status_code == 200:
-            st.success("✅ Recommendation letter has been sent to the lecturer's email.")
-        else:
-            st.warning(f"⚠️ Email sending failed: {response.text}")
-
+    # Send via Gmail SMTP
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(msg)
+        st.success("✅ Recommendation letter sent successfully to your Gmail inbox.")
     except Exception as e:
-        st.error(f"❌ Could not send email: {e}")
+        st.error(f"❌ Email sending failed: {e}")
 
 
 # --- Streamlit UI ---
@@ -115,16 +124,15 @@ if submitted:
                     "Date": current_date,
                 }
 
-                # Select appropriate template
+                # Select the appropriate template
                 template_file = "Male.docx" if gender == "Male" else "Female.docx"
 
                 if not os.path.exists(template_file):
                     st.error(f"❌ Template file '{template_file}' not found.")
                 else:
-                    # Generate and email the letter
                     doc = generate_letter(template_file, context)
                     docx_path = save_docx_only(doc, full_name, university)
-                    send_email_with_emailjs(full_name, university, grad_class, cwa, docx_path)
+                    send_email_with_gmail(full_name, university, grad_class, cwa, docx_path)
 
             except Exception as e:
                 st.error(f"❌ Unexpected error: {e}")
