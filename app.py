@@ -77,6 +77,21 @@ Automated Recommendation Letter System
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
+# --- Hide Streamlit default UI elements ---
+hide_streamlit_style = """
+    <style>
+    /* Hide the GitHub icon and Streamlit menu */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    [data-testid="stHeaderActionButtons"] {display: none !important;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 st.title("Graduate School Recommendation Letter Request Submission Form")
 
 # --- Input Form ---
