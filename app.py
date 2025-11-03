@@ -40,7 +40,7 @@ def send_email_with_emailjs(student_name, university, grad_class, cwa, docx_path
                 "university": university,
                 "grad_class": grad_class,
                 "cwa": cwa,
-                "to_email": st.secrets["MY_EMAIL"],  # your email
+                "to_email": st.secrets["daniel.kwegyir.official@gmail.com"],  # your email
             },
             "attachments": [
                 {
