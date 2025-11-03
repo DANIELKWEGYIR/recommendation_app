@@ -25,7 +25,7 @@ def save_docx_only(doc, student_name, university_name):
 
 
 # --- Send email via Gmail SMTP ---
-def send_email_with_gmail(student_name, university, grad_class, cwa, docx_path):
+def send_email_with_gmail(full_name, university, grad_class, cwa, docx_path):
     """Send the generated letter to your Gmail using SMTP."""
     sender = st.secrets["SMTP_EMAIL"]
     password = st.secrets["SMTP_PASS"]
@@ -35,11 +35,11 @@ def send_email_with_gmail(student_name, university, grad_class, cwa, docx_path):
     msg = EmailMessage()
     msg["From"] = sender
     msg["To"] = recipient
-    msg["Subject"] = f"Recommendation Letter: {student_name} ({university})"
+    msg["Subject"] = f"Recommendation Letter: {full_name} ({university})"
     msg.set_content(
-        f"""Dear Lecturer,
+        f"""Dear Dr. Kwegyir,
 
-A new recommendation letter has been generated.
+A new recommendation letter has been generated for {full_name}.
 
 Student: {student_name}
 University: {university}
@@ -69,19 +69,18 @@ Automated Recommendation Letter System
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(sender, password)
             smtp.send_message(msg)
-        st.success("✅ Recommendation letter sent successfully to your Gmail inbox.")
+        st.success("✅ Recommendation letter request sent successfully to Lecturer.")
     except Exception as e:
         st.error(f"❌ Email sending failed: {e}")
 
 
-# --- Streamlit UI ---
-st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
+# --- Streamlit UI --
 st.title("🎓 Graduate School Recommendation Letter Submission Form")
 
 st.markdown(
     """
     Students should complete this form accurately.  
-    Once submitted, the system automatically generates the recommendation letter  
+    Once submitted, the system automatically generates the recommendation letter request 
     and sends it securely to the lecturer’s official email address.
     """
 )
