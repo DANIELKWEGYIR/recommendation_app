@@ -37,9 +37,10 @@ def send_email_with_gmail(full_name, university, grad_class, cwa, docx_path):
     msg["To"] = recipient
     msg["Subject"] = f"Recommendation Letter: {full_name} ({university})"  # full name used here
     msg.set_content(
-        f"""Dear Lecturer,
+        f"""Dear Dr. Kwegyir,
 
-A new recommendation letter has been generated.
+A new recommendation letter has been generated for {full_name} in support of their application to {university}.
+Details of the student are as follows;
 
 Student: {full_name}
 University: {university}
@@ -69,22 +70,14 @@ Automated Recommendation Letter System
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(sender, password)
             smtp.send_message(msg)
-        st.success(f"✅ Recommendation letter for {full_name} sent successfully to your Gmail inbox.")
+        st.success(f"✅ Your recommendation letter request has been sent successfully to the Lecturer.")
     except Exception as e:
         st.error(f"❌ Email sending failed: {e}")
 
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
-st.title("🎓 Graduate School Recommendation Letter Submission Form")
-
-st.markdown(
-    """
-    Students should complete this form accurately.  
-    Once submitted, the system automatically generates the recommendation letter  
-    and sends it securely to the lecturer’s official email address.
-    """
-)
+st.title("Graduate School Recommendation Letter Submission Form")
 
 # --- Input Form ---
 with st.form("recommendation_form"):
@@ -99,7 +92,7 @@ with st.form("recommendation_form"):
     with col2:
         project_topic = st.text_input("Final Year Project Topic", placeholder="e.g., AI in Renewable Energy")
         grad_class = st.text_input("Graduating Class", placeholder="e.g., First Class Honours")
-        cwa = st.text_input("Cumulative Weighted Average (CWA)", placeholder="e.g., 78.5")
+        cwa = st.text_input("Cumulative Weighted Average (CWA)", placeholder="e.g., 78.5%")
         year = st.text_input("Year Lecturer Began Teaching You", placeholder="e.g., 2021")
 
     submitted = st.form_submit_button("Submit and Send Letter")
