@@ -98,8 +98,6 @@ st.title("Graduate School Recommendation Letter Request Submission Form")
 
 st.markdown("""
 Please complete this form accurately.  
-Once submitted, the system automatically generates your recommendation letter  
-and sends it to the lecturer’s official email address.
 """)
 
 # --- Input Form ---
