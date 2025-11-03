@@ -35,13 +35,13 @@ def send_email_with_gmail(full_name, university, grad_class, cwa, docx_path):
     msg = EmailMessage()
     msg["From"] = sender
     msg["To"] = recipient
-    msg["Subject"] = f"Recommendation Letter: {full_name} ({university})"
+    msg["Subject"] = f"Recommendation Letter: {full_name} ({university})"  # full name used here
     msg.set_content(
-        f"""Dear Dr. Kwegyir,
+        f"""Dear Lecturer,
 
-A new recommendation letter has been generated for {full_name}.
+A new recommendation letter has been generated.
 
-Student: {student_name}
+Student: {full_name}
 University: {university}
 Graduating Class: {grad_class}
 CWA: {cwa}
@@ -69,18 +69,19 @@ Automated Recommendation Letter System
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(sender, password)
             smtp.send_message(msg)
-        st.success("✅ Recommendation letter request sent successfully to Lecturer.")
+        st.success(f"✅ Recommendation letter for {full_name} sent successfully to your Gmail inbox.")
     except Exception as e:
         st.error(f"❌ Email sending failed: {e}")
 
 
-# --- Streamlit UI --
+# --- Streamlit UI ---
+st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
 st.title("🎓 Graduate School Recommendation Letter Submission Form")
 
 st.markdown(
     """
     Students should complete this form accurately.  
-    Once submitted, the system automatically generates the recommendation letter request 
+    Once submitted, the system automatically generates the recommendation letter  
     and sends it securely to the lecturer’s official email address.
     """
 )
