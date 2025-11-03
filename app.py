@@ -26,7 +26,7 @@ def save_docx_only(doc, student_name, university_name):
 
 
 # --- Streamlit App ---
-st.title("🎓 Graduate School Recommendation Letter Generator")
+st.title("🎓 Graduate School Recommendation Letter")
 
 # --- Input Form ---
 with st.form("recommendation_form"):
