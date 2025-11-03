@@ -77,7 +77,7 @@ Automated Recommendation Letter System
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
-st.title("Graduate School Recommendation Letter Submission Form")
+st.title("Graduate School Recommendation Letter Request Submission Form")
 
 # --- Input Form ---
 with st.form("recommendation_form"):
