@@ -25,7 +25,7 @@ def save_docx_only(doc, student_name, university_name):
 
 
 # --- Send email via Gmail SMTP ---
-def send_email_with_gmail(full_name, university, grad_class, cwa, docx_path):
+def send_email_with_gmail(full_name, university, grad_class, cwa, phone, docx_path):
     """Send the generated letter to your Gmail using SMTP."""
     sender = st.secrets["SMTP_EMAIL"]
     password = st.secrets["SMTP_PASS"]
@@ -35,26 +35,28 @@ def send_email_with_gmail(full_name, university, grad_class, cwa, docx_path):
     msg = EmailMessage()
     msg["From"] = sender
     msg["To"] = recipient
-    msg["Subject"] = f"Recommendation Letter: {full_name} ({university})"  # full name used here
+    msg["Subject"] = f"Recommendation Letter Request: {full_name} ({university})"
     msg.set_content(
         f"""Dear Dr. Kwegyir,
 
-A new recommendation letter has been generated for {full_name} in support of their application to {university}.
-Details of the student are as follows;
+A new recommendation letter request has been submitted.
 
-Student: {full_name}
+Student Details:
+----------------
+Name: {full_name}
 University: {university}
 Graduating Class: {grad_class}
 CWA: {cwa}
+Phone: {phone}
 
-The Word document is attached.
+The generated Word document is attached.
 
-Regards,
+Kind regards,
 Automated Recommendation Letter System
 """
     )
 
-    # Attach the file
+    # Attach the Word file
     with open(docx_path, "rb") as f:
         file_data = f.read()
         file_name = os.path.basename(docx_path)
@@ -70,17 +72,17 @@ Automated Recommendation Letter System
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(sender, password)
             smtp.send_message(msg)
-        st.success(f"✅ Your recommendation letter request has been sent successfully to the Lecturer.")
+        st.success("✅ Your recommendation letter request has been sent successfully to the Lecturer.")
     except Exception as e:
         st.error(f"❌ Email sending failed: {e}")
 
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Graduate Recommendation Letter Submission", layout="wide")
+
 # --- Hide Streamlit default UI elements ---
 hide_streamlit_style = """
     <style>
-    /* Hide the GitHub icon and Streamlit menu */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -94,6 +96,12 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("Graduate School Recommendation Letter Request Submission Form")
 
+st.markdown("""
+Please complete this form accurately.  
+Once submitted, the system automatically generates your recommendation letter  
+and sends it to the lecturer’s official email address.
+""")
+
 # --- Input Form ---
 with st.form("recommendation_form"):
     st.subheader("🧾 Student Details")
@@ -103,6 +111,7 @@ with st.form("recommendation_form"):
         full_name = st.text_input("Full Name of Student", placeholder="e.g., Jane Doe")
         gender = st.selectbox("Gender", ["Male", "Female"])
         university = st.text_input("University Applying To", placeholder="e.g., Stanford University")
+        phone = st.text_input("Phone Number", placeholder="e.g., +233 24 123 4567")
 
     with col2:
         project_topic = st.text_input("Final Year Project Topic", placeholder="e.g., AI in Renewable Energy")
@@ -114,7 +123,7 @@ with st.form("recommendation_form"):
 
 # --- Processing ---
 if submitted:
-    required = [full_name, gender, university, project_topic, grad_class, cwa, year]
+    required = [full_name, gender, university, project_topic, grad_class, cwa, year, phone]
     if not all(required):
         st.warning("⚠️ Please fill in all fields before submitting.")
     else:
@@ -140,7 +149,7 @@ if submitted:
                 else:
                     doc = generate_letter(template_file, context)
                     docx_path = save_docx_only(doc, full_name, university)
-                    send_email_with_gmail(full_name, university, grad_class, cwa, docx_path)
+                    send_email_with_gmail(full_name, university, grad_class, cwa, phone, docx_path)
 
             except Exception as e:
                 st.error(f"❌ Unexpected error: {e}")
