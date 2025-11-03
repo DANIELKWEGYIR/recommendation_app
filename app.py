@@ -95,7 +95,7 @@ with st.form("recommendation_form"):
         cwa = st.text_input("Cumulative Weighted Average (CWA)", placeholder="e.g., 78.5%")
         year = st.text_input("Year Lecturer Began Teaching You", placeholder="e.g., 2021")
 
-    submitted = st.form_submit_button("Submit and Send Letter")
+    submitted = st.form_submit_button("Submit Request")
 
 # --- Processing ---
 if submitted:
